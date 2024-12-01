@@ -1,59 +1,53 @@
-from telethon import TelegramClient, errors
 import asyncio
+from telethon import TelegramClient, errors
 
-# API credentials
+# Bot API credentials
 api_id = '26422364'
 api_hash = '06fb2da75e57d0c2027cafefdacdfd70'
-phone_number = '+959783844005'
-channel_id = -1002210532935  # Use as integer to avoid conversion issues
+bot_token = 'YOUR_BOT_TOKEN'
+channel_id = -1002210532935  # Replace with your private channel ID
 
 # Initialize Telegram client
-client = TelegramClient('manik', api_id, api_hash)
+client = TelegramClient('bot_session', api_id, api_hash).start(bot_token=bot_token)
 
-# Flood control variables
-REQUEST_LIMIT = 10  # Number of requests allowed per window
-TIME_WINDOW = 60  # Time window in seconds (1 minute)
-DELAY_BETWEEN_REQUESTS = 3  # Delay between approvals in seconds
+# Flood control settings
+REQUEST_LIMIT = 10  # Number of approvals per minute
+DELAY_BETWEEN_REQUESTS = 3  # Delay between each approval
 
 
-async def approve_requests():
-    async with client:
-        approved_count = 0  # Track approved requests in the current window
+async def approve_join_requests():
+    print("Approving pending join requests...")
+    approved_count = 0
 
-        try:
-            async for request in client.iter_participants(
-                channel_id, filter=client.types.ChannelParticipantsBanned
-            ):
-                if approved_count >= REQUEST_LIMIT:
-                    print(f"Flood control: Pausing for {TIME_WINDOW} seconds...")
-                    await asyncio.sleep(TIME_WINDOW)
-                    approved_count = 0  # Reset counter after time window
+    try:
+        async for request in client.get_chat_join_requests(channel_id):
+            if approved_count >= REQUEST_LIMIT:
+                print("Flood control: Waiting to avoid rate limits...")
+                await asyncio.sleep(60)  # Respect Telegram's rate limits
+                approved_count = 0  # Reset the counter
 
-                print(f"Approving request from user ID: {request.id}")
-                try:
-                    await client.edit_admin(
-                        channel_id,
-                        request.id,
-                        is_admin=False,
-                        change_info=False,
-                    )
-                    approved_count += 1
-                    await asyncio.sleep(DELAY_BETWEEN_REQUESTS)  # Respect API limits
-                except errors.FloodWaitError as e:
-                    print(f"Flood control triggered! Waiting for {e.seconds} seconds...")
-                    await asyncio.sleep(e.seconds)  # Wait for flood timeout
-                except Exception as e:
-                    print(f"Error approving request: {e}")
+            try:
+                print(f"Approving request from: {request.user_id}")
+                await client.approve_chat_join_request(channel_id, request.user_id)
+                approved_count += 1
+                await asyncio.sleep(DELAY_BETWEEN_REQUESTS)  # Delay to prevent spam
+            except errors.FloodWaitError as e:
+                print(f"Flood control triggered! Waiting for {e.seconds} seconds...")
+                await asyncio.sleep(e.seconds)
+            except Exception as e:
+                print(f"Error while approving request: {e}")
 
-        except Exception as e:
-            print(f"An error occurred: {e}")
+    except Exception as e:
+        print(f"Failed to fetch or approve requests: {e}")
 
 
 async def main():
-    await client.start(phone=phone_number)
-    print("Client started. Approving requests...")
-    await approve_requests()
+    print("Bot started!")
+    await approve_join_requests()
 
 
 if __name__ == "__main__":
-    client.loop.run_until_complete(main())
+    try:
+        client.loop.run_until_complete(main())
+    except KeyboardInterrupt:
+        print("Bot stopped!")
