@@ -1,11 +1,13 @@
 import asyncio
 from telethon import TelegramClient, errors
 
-# Bot API credentials
-api_id = '27566180'
+# Direct credentials
+api_id = 27566180
 api_hash = '22ff768b386252d2c7a8867361fa9941'
 bot_token = '7823661833:AAH7DsVQv2F2fw1E3dWhEzqorYGcNynSfyY'
-channel_id = -1002210532935  # Replace with your private channel ID
+
+# Replace with your private channel ID
+channel_id = -1002210532935  
 
 # Initialize Telegram client
 client = TelegramClient('bot_session', api_id, api_hash).start(bot_token=bot_token)
@@ -20,15 +22,16 @@ async def approve_join_requests():
     approved_count = 0
 
     try:
-        async for request in client.get_chat_join_requests(channel_id):
+        # Fetching the participants (filtering banned users who are pending approval)
+        async for user in client.iter_participants(channel_id, filter='banned'):
             if approved_count >= REQUEST_LIMIT:
                 print("Flood control: Waiting to avoid rate limits...")
                 await asyncio.sleep(60)  # Respect Telegram's rate limits
                 approved_count = 0  # Reset the counter
 
             try:
-                print(f"Approving request from: {request.user_id}")
-                await client.approve_chat_join_request(channel_id, request.user_id)
+                print(f"Approving request from: {user.id}")
+                await client.edit_admin(channel_id, user.id, is_admin=False, change_info=False)
                 approved_count += 1
                 await asyncio.sleep(DELAY_BETWEEN_REQUESTS)  # Delay to prevent spam
             except errors.FloodWaitError as e:
