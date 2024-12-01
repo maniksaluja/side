@@ -1,42 +1,59 @@
-from telethon import TelegramClient, events, errors
+from telethon import TelegramClient, errors
 import asyncio
-import time
 
+# API credentials
 api_id = '26422364'
 api_hash = '06fb2da75e57d0c2027cafefdacdfd70'
 phone_number = '+959783844005'
-channel_id = '-1002210532935'
+channel_id = -1002210532935  # Use as integer to avoid conversion issues
 
 # Initialize Telegram client
 client = TelegramClient('session_name', api_id, api_hash)
 
 # Flood control variables
-request_limit = 10  # Number of requests to approve per minute
-time_limit = 60  # Time window in seconds
-pending_approvals = []
+REQUEST_LIMIT = 10  # Number of requests allowed per window
+TIME_WINDOW = 60  # Time window in seconds (1 minute)
+DELAY_BETWEEN_REQUESTS = 3  # Delay between approvals in seconds
+
 
 async def approve_requests():
     async with client:
+        approved_count = 0  # Track approved requests in the current window
+
         try:
-            async for request in client.get_participants(channel_id, filter=telethon.tl.types.ChannelParticipantsBanned):
-                if len(pending_approvals) >= request_limit:
-                    print('Flood control: waiting before approving more requests')
-                    await asyncio.sleep(time_limit)
-                    pending_approvals.clear()
+            async for request in client.iter_participants(
+                channel_id, filter=client.types.ChannelParticipantsBanned
+            ):
+                if approved_count >= REQUEST_LIMIT:
+                    print(f"Flood control: Pausing for {TIME_WINDOW} seconds...")
+                    await asyncio.sleep(TIME_WINDOW)
+                    approved_count = 0  # Reset counter after time window
 
-                print(f'Approving {request.id}')
-                await client.edit_admin(channel_id, request.id, is_admin=False, change_info=False)
-                pending_approvals.append(request.id)
-                time.sleep(3)  # Adding delay to avoid being flagged for spam
+                print(f"Approving request from user ID: {request.id}")
+                try:
+                    await client.edit_admin(
+                        channel_id,
+                        request.id,
+                        is_admin=False,
+                        change_info=False,
+                    )
+                    approved_count += 1
+                    await asyncio.sleep(DELAY_BETWEEN_REQUESTS)  # Respect API limits
+                except errors.FloodWaitError as e:
+                    print(f"Flood control triggered! Waiting for {e.seconds} seconds...")
+                    await asyncio.sleep(e.seconds)  # Wait for flood timeout
+                except Exception as e:
+                    print(f"Error approving request: {e}")
 
-        except errors.FloodWaitError as e:
-            print(f'Flood control triggered. Waiting for {e.seconds} seconds.')
-            await asyncio.sleep(e.seconds)
         except Exception as e:
-            print(f'An error occurred: {e}')
+            print(f"An error occurred: {e}")
+
 
 async def main():
     await client.start(phone=phone_number)
+    print("Client started. Approving requests...")
     await approve_requests()
 
-client.loop.run_until_complete(main())
+
+if __name__ == "__main__":
+    client.loop.run_until_complete(main())
