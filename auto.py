@@ -2,9 +2,9 @@ import asyncio
 from telethon import TelegramClient, errors
 
 # Bot API credentials
-api_id = '26422364'
-api_hash = '06fb2da75e57d0c2027cafefdacdfd70'
-bot_token = 'YOUR_BOT_TOKEN'
+api_id = '27566180'
+api_hash = '22ff768b386252d2c7a8867361fa9941'
+bot_token = '7823661833:AAH7DsVQv2F2fw1E3dWhEzqorYGcNynSfyY'
 channel_id = -1002210532935  # Replace with your private channel ID
 
 # Initialize Telegram client
