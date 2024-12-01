@@ -8,7 +8,7 @@ phone_number = '+959783844005'
 channel_id = -1002210532935  # Use as integer to avoid conversion issues
 
 # Initialize Telegram client
-client = TelegramClient('session_name', api_id, api_hash)
+client = TelegramClient('manik', api_id, api_hash)
 
 # Flood control variables
 REQUEST_LIMIT = 10  # Number of requests allowed per window
