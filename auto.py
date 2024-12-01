@@ -22,7 +22,7 @@ async def approve_join_requests():
     approved_count = 0
 
     try:
-        # Fetching the participants (filtering banned users who are pending approval)
+        # Fetching participants with 'banned' filter (pending requests are often banned)
         async for user in client.iter_participants(channel_id, filter='banned'):
             if approved_count >= REQUEST_LIMIT:
                 print("Flood control: Waiting to avoid rate limits...")
