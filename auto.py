@@ -2,10 +2,10 @@ from telethon import TelegramClient, events, errors
 import asyncio
 import time
 
-api_id = 'YOUR_API_ID'
-api_hash = 'YOUR_API_HASH'
-phone_number = 'YOUR_PHONE_NUMBER'
-channel_id = 'YOUR_CHANNEL_ID'
+api_id = '26422364'
+api_hash = '06fb2da75e57d0c2027cafefdacdfd70'
+phone_number = '+959783844005'
+channel_id = '-1002210532935'
 
 # Initialize Telegram client
 client = TelegramClient('session_name', api_id, api_hash)
